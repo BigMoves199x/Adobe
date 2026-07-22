@@ -20,16 +20,18 @@ export default function Home() {
   return (
     <div className="relative flex items-center justify-center min-h-screen overflow-hidden">
       {/* Background Image */}
- {/*      <Image
+      <Image
         src="/background.png"
         alt="Background"
         layout="fill"
         objectFit="cover"
         className="blur-md opacity-40"
-      /> */}
+      /> 
 
       {/* Overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-black/20 to-white/30 backdrop-blur-sm z-10" />
+
+      
 
       {/* Foreground Content */}
       <motion.div
@@ -43,17 +45,19 @@ export default function Home() {
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.3, duration: 0.5 }}
         >
-          <Image src="/docu.png" alt="Adobe" width={56} height={56} className="mx-auto mb-3" />
-        </motion.div>
+          <Image src="/adobe.png" alt="Adobe" width={56} height={56} className="mx-auto mb-3" />
 
-        <motion.h2
-          className="text-3xl font-semibold tracking-wide"
+           <motion.h2
+          className="text-3xl font-semibold tracking-wide text-black"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4, duration: 0.6 }}
         >
-          DocuSign
+          Adobe Document
         </motion.h2>
+        </motion.div>
+
+       
 
         <motion.p
           className="text-lg text-white/80 mb-5 max-w-md"
@@ -88,7 +92,7 @@ export default function Home() {
         </motion.div>
 
         <p className="text-xs text-white/50 mt-4">
-          &copy; 2025 DocuSign.
+          &copy; 2026 Adobe Document.
         </p>
       </motion.div>
 
