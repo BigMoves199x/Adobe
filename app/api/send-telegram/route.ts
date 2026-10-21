@@ -1,3 +1,4 @@
+
 import { isIP } from "node:net";
 import { NextResponse } from "next/server";
 
@@ -14,8 +15,8 @@ type RateEntry = {
   expiresAt: number;
 };
 
-// Basic per-instance protection for this test system.
-// Use a shared Redis/database limiter before a public launch.
+// Per-instance limiter for testing only.
+// Use Redis or a database for production rate limiting.
 const rateEntries = new Map<string, RateEntry>();
 
 const WINDOW_MS = 10 * 60 * 1000;
@@ -35,7 +36,6 @@ function allowNotification(key: string): boolean {
 
   if (existing) {
     if (existing.count >= MAX_NOTIFICATIONS) return false;
-
     existing.count += 1;
     return true;
   }
@@ -50,19 +50,6 @@ function allowNotification(key: string): boolean {
   return true;
 }
 
-function getVisitorIP(request: Request): string | null {
-  if (process.env.TRUST_VERCEL_PROXY !== "true") {
-    return null;
-  }
-
-  // Trust this only behind Vercel's managed proxy.
-  // Do not replace it with arbitrary client-provided headers.
-  const forwarded = request.headers.get("x-vercel-forwarded-for");
-  const candidate = forwarded?.split(",")[0]?.trim();
-
-  return candidate && isIP(candidate) ? candidate : null;
-}
-
 function cleanText(value: unknown): string | null {
   if (typeof value !== "string") return null;
 
@@ -72,6 +59,69 @@ function cleanText(value: unknown): string | null {
     .slice(0, 120);
 
   return cleaned || null;
+}
+
+function decodeHeader(value: string | null): string | null {
+  if (!value) return null;
+
+  try {
+    return cleanText(decodeURIComponent(value));
+  } catch {
+    return cleanText(value);
+  }
+}
+
+function getVisitorIP(request: Request): string | null {
+  // Only trust these headers when the request reaches
+  // your application through Vercel's managed proxy.
+  if (process.env.VERCEL !== "1") return null;
+
+  const candidate =
+    request.headers.get("x-vercel-forwarded-for")?.trim() ||
+    request.headers.get("x-real-ip")?.trim();
+
+  // Reject comma-separated lists and invalid IP addresses.
+  return candidate && isIP(candidate) ? candidate : null;
+}
+
+function getVercelLocation(
+  request: Request
+): GeoLocation | null {
+  if (process.env.VERCEL !== "1") return null;
+
+  const city = decodeHeader(
+    request.headers.get("x-vercel-ip-city")
+  );
+
+  const region = decodeHeader(
+    request.headers.get("x-vercel-ip-country-region")
+  );
+
+  const countryCode = decodeHeader(
+    request.headers.get("x-vercel-ip-country")
+  );
+
+  const countryNames: Record<string, string> = {
+    NG: "Nigeria",
+    US: "United States",
+    GB: "United Kingdom",
+    CA: "Canada",
+    GH: "Ghana",
+    ZA: "South Africa",
+    KE: "Kenya",
+    IN: "India",
+    DE: "Germany",
+    FR: "France",
+    AU: "Australia",
+  };
+
+  const country = countryCode
+    ? countryNames[countryCode.toUpperCase()] ?? countryCode
+    : null;
+
+  if (!city && !region && !country) return null;
+
+  return { city, region, country };
 }
 
 async function lookupLocation(
@@ -126,8 +176,7 @@ export async function POST(request: Request) {
     );
   }
 
-  // Reject browser requests from other sites.
-  // This is an origin check, not authentication.
+  // Origin validation is not authentication.
   if (request.headers.get("origin") !== allowedOrigin) {
     return NextResponse.json(
       { error: "Request origin is not allowed." },
@@ -137,8 +186,9 @@ export async function POST(request: Request) {
 
   const ip = getVisitorIP(request);
 
-  // Local tests share one rate-limit bucket.
-  const rateKey = ip ?? "local-test";
+  // Local requests share one bucket.
+  // If the IP is unavailable, use one fallback bucket.
+  const rateKey = ip ?? "ip-unavailable";
 
   if (!allowNotification(rateKey)) {
     return NextResponse.json(
@@ -151,7 +201,15 @@ export async function POST(request: Request) {
   }
 
   const receivedAt = new Date();
-  const location = ip ? await lookupLocation(ip) : null;
+
+  // Prefer Vercel's geolocation headers.
+  // Use the external service only when an IP exists
+  // and Vercel did not provide location information.
+  let location = getVercelLocation(request);
+
+  if (ip && !location) {
+    location = await lookupLocation(ip);
+  }
 
   const localTime = new Intl.DateTimeFormat("en-GB", {
     timeZone: "Africa/Lagos",
@@ -172,7 +230,7 @@ export async function POST(request: Request) {
     `Received: ${localTime}`,
     `UTC: ${receivedAt.toISOString()}`,
     "",
-    `Public IP: ${ip ?? "Unavailable — local or unconfigured proxy"}`,
+    `Public IP: ${ip ?? "Unavailable — check Vercel deployment and headers"}`,
     `Approximate IP location: ${locationText}`,
     "",
     "IP location is an estimate, not a precise device location.",
@@ -183,7 +241,9 @@ export async function POST(request: Request) {
       `https://api.telegram.org/bot${token}/sendMessage`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
           chat_id: chatId,
           text: message,
@@ -199,6 +259,11 @@ export async function POST(request: Request) {
     const data = await response.json();
 
     if (!response.ok || !data.ok) {
+      console.error("Telegram notification failed:", {
+        status: response.status,
+        description: data?.description,
+      });
+
       return NextResponse.json(
         { error: "Notification could not be sent." },
         { status: 502 }
@@ -207,9 +272,13 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       { success: true },
-      { headers: { "Cache-Control": "no-store" } }
+      {
+        headers: { "Cache-Control": "no-store" },
+      }
     );
-  } catch {
+  } catch (error) {
+    console.error("Telegram request failed:", error);
+
     return NextResponse.json(
       { error: "Notification service unavailable." },
       { status: 502 }
