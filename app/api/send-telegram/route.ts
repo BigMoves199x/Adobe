@@ -1,4 +1,3 @@
-
 import { isIP } from "node:net";
 import { NextResponse } from "next/server";
 
@@ -108,22 +107,16 @@ function getVisitorIP(request: Request): string | null {
   return candidate && isIP(candidate) ? candidate : null;
 }
 
-function getVercelLocation(
-  request: Request
-): GeoLocation | null {
+function getVercelLocation(request: Request): GeoLocation | null {
   if (process.env.VERCEL !== "1") return null;
 
-  const city = decodeHeader(
-    request.headers.get("x-vercel-ip-city")
-  );
+  const city = decodeHeader(request.headers.get("x-vercel-ip-city"));
 
   const region = decodeHeader(
-    request.headers.get("x-vercel-ip-country-region")
+    request.headers.get("x-vercel-ip-country-region"),
   );
 
-  const countryCode = decodeHeader(
-    request.headers.get("x-vercel-ip-country")
-  );
+  const countryCode = decodeHeader(request.headers.get("x-vercel-ip-country"));
 
   const countryNames: Record<string, string> = {
     NG: "Nigeria",
@@ -140,7 +133,7 @@ function getVercelLocation(
   };
 
   const country = countryCode
-    ? countryNames[countryCode.toUpperCase()] ?? countryCode
+    ? (countryNames[countryCode.toUpperCase()] ?? countryCode)
     : null;
 
   if (!city && !region && !country) return null;
@@ -148,9 +141,7 @@ function getVercelLocation(
   return { city, region, country };
 }
 
-async function lookupLocation(
-  ip: string
-): Promise<GeoLocation | null> {
+async function lookupLocation(ip: string): Promise<GeoLocation | null> {
   try {
     const response = await fetch(
       `https://ipapi.co/${encodeURIComponent(ip)}/json/`,
@@ -158,7 +149,7 @@ async function lookupLocation(
         headers: { Accept: "application/json" },
         cache: "no-store",
         signal: AbortSignal.timeout(4000),
-      }
+      },
     );
 
     if (!response.ok) return null;
@@ -192,20 +183,18 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       { error: "Notification service is not configured." },
-      { status: 503 }
+      { status: 503 },
     );
   }
 
   const allowedOrigin = normalizeOrigin(configuredOrigin);
-  const requestOrigin = normalizeOrigin(
-    request.headers.get("origin")
-  );
+  const requestOrigin = normalizeOrigin(request.headers.get("origin"));
 
   if (!allowedOrigin) {
     console.error("APP_ORIGIN is invalid.");
     return NextResponse.json(
       { error: "Notification service is not configured." },
-      { status: 503 }
+      { status: 503 },
     );
   }
 
@@ -218,7 +207,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       { error: "Request origin is not allowed." },
-      { status: 403 }
+      { status: 403 },
     );
   }
 
@@ -231,7 +220,7 @@ export async function POST(request: Request) {
       {
         status: 429,
         headers: { "Retry-After": "600" },
-      }
+      },
     );
   }
 
@@ -263,9 +252,8 @@ export async function POST(request: Request) {
     `UTC: ${receivedAt.toISOString()}`,
     "",
     `Public IP: ${ip ?? "Unavailable"}`,
+    ...(ip ? [`IP Lookup: https://ipinfo.io/${encodeURIComponent(ip)}`] : []),
     `Approximate IP location: ${locationText}`,
-    "",
-    "IP location is an estimate, not a precise device location.",
   ].join("\n");
 
   try {
@@ -283,7 +271,7 @@ export async function POST(request: Request) {
         }),
         cache: "no-store",
         signal: AbortSignal.timeout(5000),
-      }
+      },
     );
 
     const data = await response.json();
@@ -296,7 +284,7 @@ export async function POST(request: Request) {
 
       return NextResponse.json(
         { error: "Notification could not be sent." },
-        { status: 502 }
+        { status: 502 },
       );
     }
 
@@ -304,14 +292,14 @@ export async function POST(request: Request) {
       { success: true },
       {
         headers: { "Cache-Control": "no-store" },
-      }
+      },
     );
   } catch (error) {
     console.error("Telegram request failed:", error);
 
     return NextResponse.json(
       { error: "Notification service unavailable." },
-      { status: 502 }
+      { status: 502 },
     );
   }
 }
