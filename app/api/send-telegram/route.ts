@@ -15,8 +15,7 @@ type RateEntry = {
   expiresAt: number;
 };
 
-// Per-instance limiter for testing only.
-// Use Redis or a database for production rate limiting.
+// Per-instance limiter. Use Redis or a database for production.
 const rateEntries = new Map<string, RateEntry>();
 
 const WINDOW_MS = 10 * 60 * 1000;
@@ -71,16 +70,41 @@ function decodeHeader(value: string | null): string | null {
   }
 }
 
+function normalizeOrigin(value: string | null): string | null {
+  if (!value) return null;
+
+  try {
+    const url = new URL(value);
+
+    if (!["http:", "https:"].includes(url.protocol)) {
+      return null;
+    }
+
+    // An origin must not contain credentials or a non-root path.
+    if (
+      url.username ||
+      url.password ||
+      (url.pathname !== "/" && url.pathname !== "") ||
+      url.search ||
+      url.hash
+    ) {
+      return null;
+    }
+
+    return url.origin;
+  } catch {
+    return null;
+  }
+}
+
 function getVisitorIP(request: Request): string | null {
-  // Only trust these headers when the request reaches
-  // your application through Vercel's managed proxy.
   if (process.env.VERCEL !== "1") return null;
 
   const candidate =
     request.headers.get("x-vercel-forwarded-for")?.trim() ||
     request.headers.get("x-real-ip")?.trim();
 
-  // Reject comma-separated lists and invalid IP addresses.
+  // Only accept one valid IP, not a client-supplied list.
   return candidate && isIP(candidate) ? candidate : null;
 }
 
@@ -159,25 +183,39 @@ export async function POST(request: Request) {
   const configuredOrigin = process.env.APP_ORIGIN;
 
   if (!token || !chatId || !configuredOrigin) {
+    console.error("Notification configuration is incomplete:", {
+      hasBotToken: Boolean(token),
+      hasChatId: Boolean(chatId),
+      hasAppOrigin: Boolean(configuredOrigin),
+      environment: process.env.VERCEL_ENV ?? "local",
+    });
+
     return NextResponse.json(
       { error: "Notification service is not configured." },
       { status: 503 }
     );
   }
 
-  let allowedOrigin: string;
+  const allowedOrigin = normalizeOrigin(configuredOrigin);
+  const requestOrigin = normalizeOrigin(
+    request.headers.get("origin")
+  );
 
-  try {
-    allowedOrigin = new URL(configuredOrigin).origin;
-  } catch {
+  if (!allowedOrigin) {
+    console.error("APP_ORIGIN is invalid.");
     return NextResponse.json(
       { error: "Notification service is not configured." },
       { status: 503 }
     );
   }
 
-  // Origin validation is not authentication.
-  if (request.headers.get("origin") !== allowedOrigin) {
+  // Reject requests without the expected browser origin.
+  if (!requestOrigin || requestOrigin !== allowedOrigin) {
+    console.warn("Notification origin rejected:", {
+      requestOrigin,
+      allowedOrigin,
+    });
+
     return NextResponse.json(
       { error: "Request origin is not allowed." },
       { status: 403 }
@@ -185,9 +223,6 @@ export async function POST(request: Request) {
   }
 
   const ip = getVisitorIP(request);
-
-  // Local requests share one bucket.
-  // If the IP is unavailable, use one fallback bucket.
   const rateKey = ip ?? "ip-unavailable";
 
   if (!allowNotification(rateKey)) {
@@ -202,9 +237,6 @@ export async function POST(request: Request) {
 
   const receivedAt = new Date();
 
-  // Prefer Vercel's geolocation headers.
-  // Use the external service only when an IP exists
-  // and Vercel did not provide location information.
   let location = getVercelLocation(request);
 
   if (ip && !location) {
@@ -224,13 +256,13 @@ export async function POST(request: Request) {
     : "Unavailable";
 
   const message = [
-    "🟢 Document Space",
+    "🟢 Visit",
     "",
-    "Event: Demo checkbox completed",
+    "Event: Checkbox completed",
     `Received: ${localTime}`,
     `UTC: ${receivedAt.toISOString()}`,
     "",
-    `Public IP: ${ip ?? "Unavailable — check Vercel deployment and headers"}`,
+    `Public IP: ${ip ?? "Unavailable"}`,
     `Approximate IP location: ${locationText}`,
     "",
     "IP location is an estimate, not a precise device location.",
@@ -241,9 +273,7 @@ export async function POST(request: Request) {
       `https://api.telegram.org/bot${token}/sendMessage`,
       {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           chat_id: chatId,
           text: message,
